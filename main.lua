@@ -2,7 +2,7 @@ local MODE_NORMAL = "normal"
 local MODE_CONTEXT_TIMELINE = "context_timeline"
 local MODE_EDITOR_ONLY = "editor_only"
 
-local EXTENSION_VERSION = "0.1.6"
+local EXTENSION_VERSION = "0.1.7"
 local RELEASE_REPO = "rauldeavila/focus-palette"
 local CANVAS_ID = "focusPaletteCanvas"
 local DEFAULT_BOUNDS = { x = 96, y = 96, width = 300, height = 260 }
@@ -461,20 +461,23 @@ local function paintPalette(ev)
   if usePngPalette() then
     local image = loadPngImage()
     if image then
-      local drawWidth = math.max(1, width)
-      local drawHeight = math.max(1, height)
+      local scale = math.min(width / image.width, height / image.height)
+      local drawWidth = math.max(1, math.floor(image.width * scale))
+      local drawHeight = math.max(1, math.floor(image.height * scale))
+      local drawX = math.floor((width - drawWidth) / 2)
+      local drawY = math.floor((height - drawHeight) / 2)
 
       gc:drawImage(
         image,
         Rectangle(0, 0, image.width, image.height),
-        Rectangle(0, 0, drawWidth, drawHeight)
+        Rectangle(drawX, drawY, drawWidth, drawHeight)
       )
 
       lastLayout = {
         type = "png",
         image = image,
-        startX = 0,
-        startY = 0,
+        startX = drawX,
+        startY = drawY,
         width = drawWidth,
         height = drawHeight,
         imageWidth = image.width,
