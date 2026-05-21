@@ -2,7 +2,7 @@ local MODE_NORMAL = "normal"
 local MODE_CONTEXT_TIMELINE = "context_timeline"
 local MODE_EDITOR_ONLY = "editor_only"
 
-local EXTENSION_VERSION = "0.1.10"
+local EXTENSION_VERSION = "0.1.11"
 local RELEASE_REPO = "rauldeavila/focus-palette"
 local CANVAS_ID = "focusPaletteCanvas"
 local DEFAULT_BOUNDS = { x = 96, y = 96, width = 300, height = 260 }
@@ -267,6 +267,24 @@ local function openFile(path)
   os.execute("open " .. shellQuote(path))
 end
 
+local function removeFile(path)
+  pcall(function()
+    os.remove(path)
+  end)
+end
+
+local function isZipFile(path)
+  local file = io.open(path, "rb")
+  if not file then
+    return false
+  end
+
+  local signature = file:read(2)
+  file:close()
+
+  return signature == "PK"
+end
+
 local function checkForUpdates()
   local apiUrl = "https://api.github.com/repos/" .. RELEASE_REPO .. "/releases/latest"
   local command = "curl -fsSL -H " ..
@@ -308,14 +326,27 @@ local function checkForUpdates()
     return
   end
 
-  local target = app.fs.joinPath(app.fs.tempPath, "focus-palette-" .. tag .. ".aseprite-extension")
-  local downloadCommand = "curl -fsSL -o " .. shellQuote(target) .. " " .. shellQuote(downloadUrl)
+  local target = app.fs.joinPath(app.fs.tempPath, "focus-palette.aseprite-extension")
+  removeFile(target)
+
+  local downloadCommand = "curl --fail --location --show-error --silent --retry 2 -o " ..
+    shellQuote(target) .. " " ..
+    shellQuote(downloadUrl)
   local result = os.execute(downloadCommand)
 
   if result ~= true and result ~= 0 then
     app.alert {
       title = "Focus Palette",
       text = "Could not download " .. tag .. "."
+    }
+    return
+  end
+
+  if not isZipFile(target) then
+    removeFile(target)
+    app.alert {
+      title = "Focus Palette",
+      text = "Downloaded file was not a valid extension package."
     }
     return
   end
