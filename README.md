@@ -4,7 +4,7 @@ An Aseprite extension that replaces the native F8 preview with an editable focus
 
 ## Features
 
-- F8 toggles a clean editable focus mode.
+- Cmd+Enter toggles a clean editable focus mode on macOS.
 - Floating palette window with left-click foreground and right-click background picking.
 - Tab toggles the timeline while focus mode is active.
 - Optional PNG palette mode: draw a PNG as the palette, resize the window, and pick colors from the PNG pixels.
@@ -50,7 +50,7 @@ dist/focus-palette.aseprite-extension
 4. Tag the commit:
 
 ```sh
-git tag v0.1.5
+git tag v0.1.6
 git push origin main --tags
 ```
 

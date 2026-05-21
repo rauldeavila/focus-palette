@@ -9,6 +9,6 @@ rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 
 cd "$ROOT_DIR"
-zip -r "$OUT_FILE" package.json main.lua
+zip -r "$OUT_FILE" package.json main.lua focus-palette.aseprite-keys
 
 echo "$OUT_FILE"

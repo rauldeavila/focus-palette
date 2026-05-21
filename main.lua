@@ -2,7 +2,7 @@ local MODE_NORMAL = "normal"
 local MODE_CONTEXT_TIMELINE = "context_timeline"
 local MODE_EDITOR_ONLY = "editor_only"
 
-local EXTENSION_VERSION = "0.1.5"
+local EXTENSION_VERSION = "0.1.6"
 local RELEASE_REPO = "rauldeavila/focus-palette"
 local CANVAS_ID = "focusPaletteCanvas"
 local DEFAULT_BOUNDS = { x = 96, y = 96, width = 300, height = 260 }
@@ -942,12 +942,6 @@ end
 
 local function handleBeforeCommand(ev)
   if internalCommand then
-    return
-  end
-
-  if ev.name == "FullscreenPreview" then
-    ev.stopPropagation()
-    toggleFocusMode()
     return
   end
 

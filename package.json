@@ -2,19 +2,26 @@
   "name": "focus-palette",
   "displayName": "Focus Palette",
   "description": "Editable focus mode for Aseprite with a floating palette-only color picker.",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "author": {
     "name": "Rafael Araujo"
   },
   "publisher": "rajunior",
   "license": "MIT",
   "categories": [
-    "Scripts"
+    "Scripts",
+    "Keys"
   ],
   "contributes": {
     "scripts": [
       {
         "path": "./main.lua"
+      }
+    ],
+    "keys": [
+      {
+        "id": "focus-palette-keys",
+        "path": "./focus-palette.aseprite-keys"
       }
     ]
   }
