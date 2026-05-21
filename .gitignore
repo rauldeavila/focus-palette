@@ -1,0 +1,3 @@
+dist/
+*.aseprite-extension
+.DS_Store
