@@ -2,7 +2,7 @@
   "name": "focus-palette",
   "displayName": "Focus Palette",
   "description": "Editable focus mode for Aseprite with a floating palette-only color picker.",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "author": {
     "name": "Rafael Araujo"
   },

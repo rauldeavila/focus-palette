@@ -2,7 +2,7 @@ local MODE_NORMAL = "normal"
 local MODE_CONTEXT_TIMELINE = "context_timeline"
 local MODE_EDITOR_ONLY = "editor_only"
 
-local EXTENSION_VERSION = "0.1.8"
+local EXTENSION_VERSION = "0.1.9"
 local RELEASE_REPO = "rauldeavila/focus-palette"
 local CANVAS_ID = "focusPaletteCanvas"
 local DEFAULT_BOUNDS = { x = 96, y = 96, width = 300, height = 260 }
@@ -26,6 +26,8 @@ local listeners = {}
 local lastLayout = nil
 local toggleTimeline = nil
 local repaintPalette = nil
+local boundsWatchTimer = nil
+local lastSavedBoundsKey = nil
 local drag = nil
 local pngImage = nil
 local pngImagePath = nil
@@ -431,6 +433,57 @@ local function savePaletteBounds()
     width = clampInt(bounds.width, DEFAULT_BOUNDS.width, 120),
     height = clampInt(bounds.height, DEFAULT_BOUNDS.height, 100)
   }
+  lastSavedBoundsKey = table.concat({
+    tostring(pluginRef.preferences.paletteBounds.x),
+    tostring(pluginRef.preferences.paletteBounds.y),
+    tostring(pluginRef.preferences.paletteBounds.width),
+    tostring(pluginRef.preferences.paletteBounds.height)
+  }, ":")
+end
+
+local function currentPaletteBoundsKey()
+  if not paletteDialog then
+    return nil
+  end
+
+  local bounds = paletteDialog.bounds
+  if not bounds then
+    return nil
+  end
+
+  return table.concat({
+    tostring(clampInt(bounds.x, DEFAULT_BOUNDS.x)),
+    tostring(clampInt(bounds.y, DEFAULT_BOUNDS.y)),
+    tostring(clampInt(bounds.width, DEFAULT_BOUNDS.width, 120)),
+    tostring(clampInt(bounds.height, DEFAULT_BOUNDS.height, 100))
+  }, ":")
+end
+
+local function startBoundsWatch()
+  if boundsWatchTimer and boundsWatchTimer.isRunning then
+    return
+  end
+
+  boundsWatchTimer = Timer {
+    interval = 0.5,
+    ontick = function()
+      if not paletteDialog then
+        return
+      end
+
+      local key = currentPaletteBoundsKey()
+      if key and key ~= lastSavedBoundsKey then
+        savePaletteBounds()
+      end
+    end
+  }
+  boundsWatchTimer:start()
+end
+
+local function stopBoundsWatch()
+  if boundsWatchTimer and boundsWatchTimer.isRunning then
+    boundsWatchTimer:stop()
+  end
 end
 
 local function bestGrid(ncolors, width, height)
@@ -719,11 +772,20 @@ local function resizeDialogToPng()
   end
 
   local bounds = paletteDialog.bounds
+  local width = clampInt(bounds.width, image.width, 32)
+  local height = clampInt(bounds.height, image.height, 32)
+  local saved = pluginRef.preferences.paletteBounds
+
+  if saved then
+    width = clampInt(saved.width, width, 32)
+    height = clampInt(saved.height, height, 32)
+  end
+
   paletteDialog.bounds = Rectangle(
     bounds.x,
     bounds.y,
-    math.max(32, image.width),
-    math.max(32, image.height)
+    width,
+    height
   )
   savePaletteBounds()
 end
@@ -806,14 +868,6 @@ local function showPaletteDialog()
     clampInt(bounds.height, DEFAULT_BOUNDS.height, 100)
   )
 
-  if usePngPalette() then
-    local image = loadPngImage()
-    if image then
-      initialBounds.width = math.max(32, image.width)
-      initialBounds.height = math.max(32, image.height)
-    end
-  end
-
   paletteDialog = Dialog {
     title = "Palette",
     notitlebar = true,
@@ -862,6 +916,8 @@ local function showPaletteDialog()
     wait = false,
     bounds = initialBounds
   }
+  savePaletteBounds()
+  startBoundsWatch()
 end
 
 repaintPalette = function()
@@ -876,6 +932,7 @@ local function closePaletteDialog()
   end
 
   savePaletteBounds()
+  stopBoundsWatch()
   closingPaletteProgrammatically = true
   paletteDialog:close()
   closingPaletteProgrammatically = false

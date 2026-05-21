@@ -50,7 +50,7 @@ dist/focus-palette.aseprite-extension
 4. Tag the commit:
 
 ```sh
-git tag v0.1.8
+git tag v0.1.9
 git push origin main --tags
 ```
 
