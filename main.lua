@@ -2,7 +2,7 @@ local MODE_NORMAL = "normal"
 local MODE_CONTEXT_TIMELINE = "context_timeline"
 local MODE_EDITOR_ONLY = "editor_only"
 
-local EXTENSION_VERSION = "0.1.7"
+local EXTENSION_VERSION = "0.1.8"
 local RELEASE_REPO = "rauldeavila/focus-palette"
 local CANVAS_ID = "focusPaletteCanvas"
 local DEFAULT_BOUNDS = { x = 96, y = 96, width = 300, height = 260 }
@@ -234,13 +234,45 @@ local function isVersionNewer(remote, localVersion)
   return rc > lc
 end
 
+local function jsonStringField(text, field)
+  local pattern = '"' .. field .. '"%s*:%s*"([^"]+)"'
+  return text:match(pattern)
+end
+
+local function latestReleaseInfo(response)
+  local tag = jsonStringField(response, "tag_name") or jsonStringField(response, "name")
+  local downloadUrl = nil
+
+  for block in response:gmatch("{.-}") do
+    local name = jsonStringField(block, "name")
+    local url = jsonStringField(block, "browser_download_url")
+
+    if name and url and name:match("%.aseprite%-extension$") then
+      downloadUrl = url:gsub("\\/", "/")
+      break
+    end
+  end
+
+  if not downloadUrl then
+    downloadUrl = response:match('"browser_download_url"%s*:%s*"([^"]+%.aseprite%-extension)"')
+    if downloadUrl then
+      downloadUrl = downloadUrl:gsub("\\/", "/")
+    end
+  end
+
+  return tag, downloadUrl
+end
+
 local function openFile(path)
   os.execute("open " .. shellQuote(path))
 end
 
 local function checkForUpdates()
   local apiUrl = "https://api.github.com/repos/" .. RELEASE_REPO .. "/releases/latest"
-  local command = "curl -fsSL " .. shellQuote(apiUrl)
+  local command = "curl -fsSL -H " ..
+    shellQuote("Accept: application/vnd.github+json") .. " -H " ..
+    shellQuote("User-Agent: focus-palette-aseprite") .. " " ..
+    shellQuote(apiUrl)
   local response = readCommand(command)
 
   if not response or response == "" then
@@ -251,11 +283,8 @@ local function checkForUpdates()
     return
   end
 
-  local ok, release = pcall(function()
-    return json.decode(response)
-  end)
-
-  if not ok or type(release) ~= "table" then
+  local tag, downloadUrl = latestReleaseInfo(response)
+  if not tag or tag == "" then
     app.alert {
       title = "Focus Palette",
       text = "Could not parse GitHub release data."
@@ -263,25 +292,12 @@ local function checkForUpdates()
     return
   end
 
-  local tag = release.tag_name or release.name or ""
   if not isVersionNewer(tag, EXTENSION_VERSION) then
     app.alert {
       title = "Focus Palette",
       text = "Focus Palette is up to date.\nInstalled: v" .. EXTENSION_VERSION
     }
     return
-  end
-
-  local downloadUrl = nil
-  if type(release.assets) == "table" then
-    for _, asset in ipairs(release.assets) do
-      if type(asset.name) == "string" and
-         asset.name:match("%.aseprite%-extension$") and
-         type(asset.browser_download_url) == "string" then
-        downloadUrl = asset.browser_download_url
-        break
-      end
-    end
   end
 
   if not downloadUrl then
